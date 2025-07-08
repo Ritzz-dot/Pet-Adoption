@@ -1,0 +1,75 @@
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  color: #131811;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  border-radius: 0.75rem;
+}
+.nav-item.active {
+  background-color: #f2f4f0;
+}
+
+.icon {
+  color: #131811;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  color: #131811;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+  border: 1px solid #dfe5dc;
+  background: white;
+  border-radius: 0.75rem;
+  color: #131811;
+  padding: 0.9375rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  width: 100%;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #6f8863;
+}
+
+textarea {
+  min-height: 9rem;
+  resize: none;
+}
+
+.btn {
+  min-width: 84px;
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: bold;
+  letter-spacing: 0.015em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn.cancel {
+  background-color: #f2f4f0;
+  color: #131811;
+}
+
+.btn.save {
+  background-color: #7dea47;
+  color: #131811;
+}
