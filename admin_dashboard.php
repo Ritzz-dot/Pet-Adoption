@@ -1,92 +1,88 @@
 <?php
-session_start();
-include "db.php";
+$page_title = "Admin Dashboard";
+require 'includes/db.php';
 
-// Validate admin access
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-  header("Location: login.php");
-  exit();
-}
-
-// Fetch stats from DB
-$totalPets = 0;
-$pendingAdoptions = 0;
-$newUsers = 0;
-
-// Total Pets
-$result = $conn->query("SELECT COUNT(*) FROM pets");
-if ($result) {
-  $totalPets = $result->fetch_row()[0];
-}
-
-// Pending Adoptions
-$result = $conn->query("SELECT COUNT(*) FROM adoption_requests WHERE status = 'pending'");
-if ($result) {
-  $pendingAdoptions = $result->fetch_row()[0];
-}
-
-// New Users
-$result = $conn->query("SELECT COUNT(*) FROM users WHERE role = 'user'");
-if ($result) {
-  $newUsers = $result->fetch_row()[0];
-}
+// Metrics from DB
+$total_users = $conn->query("SELECT COUNT(*) AS count FROM users")->fetch_assoc()['count'];
+$total_pets  = $conn->query("SELECT COUNT(*) AS count FROM pets")->fetch_assoc()['count'];
+$total_apps  = $conn->query("SELECT COUNT(*) AS count FROM adoption_requests")->fetch_assoc()['count'];
+$pending_apps = $conn->query("SELECT COUNT(*) AS count FROM adoption_requests WHERE status = 'Pending'")->fetch_assoc()['count'];
 ?>
+<?php ob_start(); ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="admin_dashboard.css" />
-</head>
-<body>
-  <div class="sidebar">
-    <h2>PetAdoption Admin</h2>
-    <ul>
-      <li><a href="admin_dashboard.php" class="active">Dashboard</a></li>
-      <li><a href="pet.php">Pets</a></li>
-      <li><a href="applications.php">Applications</a></li>
-      <li><a href="users.php">Users</a></li>
-      <li><a href="admins_setting.php">Settings</a></li>
-      <li><a href="logout.php">Logout</a></li>
-    </ul>
+<h1 class="text-3xl font-bold mb-6">Dashboard Overview</h1>
+
+<!-- Stat Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+
+  <div class="card">
+    <div class="text-gray-500 text-sm">Total Users</div>
+    <div class="text-4xl font-semibold"><?= $total_users ?></div>
   </div>
 
-  <div class="main">
-    <h1>Dashboard</h1>
-    <div class="cards">
-      <div class="card">
-        <h3>Total Pets</h3>
-        <p><?php echo $totalPets; ?></p>
-      </div>
-      <div class="card">
-        <h3>Pending Adoptions</h3>
-        <p><?php echo $pendingAdoptions; ?></p>
-      </div>
-      <div class="card">
-        <h3>New Users</h3>
-        <p><?php echo $newUsers; ?></p>
-      </div>
-    </div>
-
-    <div class="chart">
-      <h4>Adoption Trends</h4>
-      <p>+15% in last 3 months</p>
-      <div class="chart-img"></div>
-    </div>
-
-    <div class="chart">
-      <h4>User Activity</h4>
-      <p>+10% in last 3 months</p>
-      <div class="chart-img"></div>
-    </div>
-
-    <div class="btns">
-      <button class="btn-green" onclick="location.href='pet.php'">Add New Pet</button>
-      <button class="btn-gray" onclick="location.href='view_requests.php'">Review Pending Requests</button>
-    </div>
+  <div class="card">
+    <div class="text-gray-500 text-sm">Total Pets</div>
+    <div class="text-4xl font-semibold"><?= $total_pets ?></div>
   </div>
-</body>
-</html>
+
+  <div class="card">
+    <div class="text-gray-500 text-sm">Total Applications</div>
+    <div class="text-4xl font-semibold"><?= $total_apps ?></div>
+  </div>
+
+  <div class="card">
+    <div class="text-gray-500 text-sm">Pending Applications</div>
+    <div class="text-4xl font-semibold"><?= $pending_apps ?></div>
+  </div>
+
+</div>
+
+<!-- Chart.js Traffic (Optional Dummy Data) -->
+<div class="bg-white p-6 rounded-2xl shadow-md">
+  <h2 class="text-xl font-semibold mb-4">Website Traffic (Last 7 Days)</h2>
+  <canvas id="trafficChart" height="120"></canvas>
+</div>
+
+<!-- Tailwind Styles -->
+<style>
+  .card {
+    @apply bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition;
+  }
+</style>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('trafficChart').getContext('2d');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [{
+      label: 'Visits',
+      data: [20, 40, 35, 60, 80, 55, 70],
+      backgroundColor: 'rgba(59,130,246,0.1)',
+      borderColor: 'rgba(59,130,246,1)',
+      borderWidth: 2,
+      tension: 0.3,
+      fill: true,
+      pointRadius: 4,
+      pointHoverRadius: 6
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      y: { beginAtZero: true }
+    }
+  }
+});
+</script>
+
+<?php
+$page_content = ob_get_clean();
+include 'includes/admin_layout.php';
+?>

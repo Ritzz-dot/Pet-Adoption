@@ -1,6 +1,7 @@
 <?php
 session_start();
-include "db.php";
+include(__DIR__ . "/includes/db.php");
+
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
   $email = trim($_POST["email"]);

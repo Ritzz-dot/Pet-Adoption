@@ -1,174 +1,102 @@
 <?php
-session_start();
-include "db.php";
+$page_title = "Adoption Applications";
+require 'includes/db.php';
 
-// Restrict access to admin only
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header("Location: login.php");
-    exit();
+
+
+/* ────────── Handle Approve / Reject ────────── */
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $req_id = (int) $_POST['req_id'];
+  $status = $_POST['action'] === 'approve' ? 'approved' : 'rejected';
+  $remark = trim($_POST['remark'] ?? '');
+
+  $stmt = $conn->prepare("UPDATE adoption_requests SET status = ?, remark = ? WHERE req_id = ?");
+  $stmt->bind_param('ssi', $status, $remark, $req_id);
+  $stmt->execute();
+  $stmt->close();
+
+  header("Location: applications.php?msg=updated");
+  exit;
 }
 
-// Fetch all adoption requests
-$query = "SELECT ar.pet_id, ar.request_date, ar.status, ar.remark, u.fullname, p.name AS pet_name 
-          FROM adoption_requests ar
-          JOIN users u ON ar.user_id = u.id
-          JOIN pets p ON ar.pet_id = p.pet_id
-          ORDER BY ar.request_date DESC";
-$result = $conn->query($query);
+/* ────────── Fetch Applications with Joins ────────── */
+$sql = "
+SELECT ar.*, 
+       u.fullname, u.email, u.phone,
+       p.name AS pet_name, p.image_path
+FROM adoption_requests ar
+JOIN users u ON ar.user_id = u.id
+JOIN pets p ON ar.pet_id = p.pet_id
+ORDER BY ar.request_date DESC
+";
+$result = $conn->query($sql);
+$applications = [];
+while ($row = $result->fetch_assoc()) $applications[] = $row;
 ?>
+<?php ob_start(); ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Adoption Requests</title>
-  <link rel="stylesheet" href="admin_dashboard.css" />
-  <style>
-    .main h1 {
-      margin-bottom: 20px;
-    }
+<h1 class="text-3xl font-bold mb-6">Adoption Applications</h1>
 
-    .gmail-style-list {
-      background: #fff;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
-    }
+<?php if (isset($_GET['msg']) && $_GET['msg'] === 'updated'): ?>
+  <div class="mb-6 p-4 bg-green-100 text-green-700 rounded-lg">Status updated successfully.</div>
+<?php endif; ?>
 
-    .request-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 15px 20px;
-      border-bottom: 1px solid #eee;
-      align-items: center;
-    }
+<!-- Card View -->
+<div class="space-y-6">
+<?php foreach ($applications as $app): ?>
+  <div class="bg-white p-6 rounded-xl shadow flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+    
+    <!-- Pet Info -->
+    <div class="flex items-center gap-4">
+      <img src="<?= htmlspecialchars($app['image_path']) ?>" class="w-20 h-20 object-cover rounded-full border" />
+      <div>
+        <h2 class="text-lg font-semibold"><?= htmlspecialchars($app['pet_name']) ?></h2>
+        <p class="text-gray-500 text-sm">Requested by: <?= htmlspecialchars($app['fullname']) ?> (<?= $app['email'] ?>)</p>
+        <p class="text-sm text-gray-400"><?= date('d M Y, h:i A', strtotime($app['request_date'])) ?></p>
+      </div>
+    </div>
 
-    .request-row:last-child {
-      border-bottom: none;
-    }
+    <!-- Status + Action -->
+    <div class="flex-1 md:text-right space-y-3 md:space-y-0 md:flex md:flex-col md:items-end">
+      <span class="px-3 py-1 rounded-full text-sm font-medium
+        <?= $app['status'] === 'pending' ? 'bg-yellow-100 text-yellow-800' : '' ?>
+        <?= $app['status'] === 'approved' ? 'bg-green-100 text-green-800' : '' ?>
+        <?= $app['status'] === 'rejected' ? 'bg-red-100 text-red-800' : '' ?>">
+        <?= ucfirst($app['status']) ?>
+      </span>
 
-    .request-info {
-      flex: 1;
-    }
-
-    .request-info h4 {
-      margin-bottom: 4px;
-      font-size: 16px;
-    }
-
-    .request-info p {
-      font-size: 14px;
-      color: #555;
-    }
-
-    .status-badge {
-      padding: 6px 10px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      color: white;
-      margin-right: 10px;
-    }
-
-    .approved { background: #28a745; }
-    .rejected { background: #dc3545; }
-    .pending { background: #ffc107; color: #111; }
-
-    .action-form {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .action-form input[type="text"] {
-      padding: 6px 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 13px;
-    }
-
-    .action-form button {
-      padding: 6px 10px;
-      font-size: 13px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      color: white;
-    }
-
-    .btn-approve {
-      background-color: #28a745;
-    }
-
-    .btn-reject {
-      background-color: #dc3545;
-    }
-
-    .btn-approve:hover {
-      background-color: #218838;
-    }
-
-    .btn-reject:hover {
-      background-color: #c82333;
-    }
-  </style>
-</head>
-<body>
-  <div class="sidebar">
-    <h2>PetAdoption Admin</h2>
-    <ul>
-      <li><a href="admin_dashboard.php">Dashboard</a></li>
-      <li><a href="pet.php">Pets</a></li>
-      <li><a href="applications.php" class="active">Applications</a></li>
-      <li><a href="users.php">Users</a></li>
-      <li><a href="admins_setting.php">Settings</a></li>
-      <li><a href="logout.php">Logout</a></li>
-    </ul>
-  </div>
-
-  <div class="main">
-    <h1>Adoption Requests</h1>
-
-    <div class="gmail-style-list">
-      <?php if ($result->num_rows > 0): ?>
-        <?php while ($row = $result->fetch_assoc()): ?>
-          <div class="request-row">
-            <div class="request-info">
-              <h4><?= htmlspecialchars($row['fullname']) ?> → <?= htmlspecialchars($row['pet_name']) ?></h4>
-              <p><?= htmlspecialchars($row['date']) ?></p>
-              <?php if (!empty($row['remark'])): ?>
-                <p><strong>Remark:</strong> <?= htmlspecialchars($row['remark']) ?></p>
-              <?php endif; ?>
-            </div>
-
-            <div class="action-form">
-              <span class="status-badge <?= strtolower($row['status']) ?>">
-                <?= $row['status'] ?>
-              </span>
-
-              <?php if ($row['status'] === 'Pending'): ?>
-                <form method="POST" action="update_status.php" style="display:inline;">
-                  <input type="hidden" name="request_id" value="<?= $row['id'] ?>">
-                  <input type="hidden" name="action" value="approve">
-                  <button type="submit" class="btn-approve">Approve</button>
-                </form>
-
-                <form method="POST" action="update_status.php" style="display:inline;">
-                  <input type="hidden" name="request_id" value="<?= $row['id'] ?>">
-                  <input type="hidden" name="action" value="reject">
-                  <input type="text" name="remark" placeholder="Rejection reason" required>
-                  <button type="submit" class="btn-reject">Reject</button>
-                </form>
-              <?php endif; ?>
-            </div>
-          </div>
-        <?php endwhile; ?>
-      <?php else: ?>
-        <div class="request-row">
-          <p>No adoption requests found.</p>
-        </div>
+      <?php if ($app['status'] === 'pending'): ?>
+        <form method="POST" class="mt-2 flex flex-col sm:flex-row items-end gap-3">
+          <input type="hidden" name="req_id" value="<?= $app['req_id'] ?>">
+          <input type="text" name="remark" placeholder="Optional remark" class="input-field w-48" />
+          <button name="action" value="approve" class="btn btn-primary">Approve</button>
+          <button name="action" value="reject" class="btn btn-danger">Reject</button>
+        </form>
+      <?php elseif (!empty($app['remark'])): ?>
+        <p class="text-sm text-gray-600 italic mt-2">Remark: <?= htmlspecialchars($app['remark']) ?></p>
       <?php endif; ?>
     </div>
   </div>
-</body>
-</html>
+<?php endforeach; ?>
+</div>
+
+<!-- Tailwind UI Utilities -->
+<style>
+  .input-field {
+    @apply px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500;
+  }
+  .btn {
+    @apply px-4 py-2 rounded-md text-sm font-medium transition;
+  }
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700;
+  }
+  .btn-danger {
+    @apply bg-red-500 text-white hover:bg-red-600;
+  }
+</style>
+
+<?php
+$page_content = ob_get_clean();
+include 'includes/admin_layout.php';
+?>

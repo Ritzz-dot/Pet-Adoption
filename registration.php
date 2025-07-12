@@ -1,5 +1,6 @@
 <?php
-include "db.php";
+include(__DIR__ . "/includes/db.php");
+
 
 $fullname = $email = $phone = $password = $confirm = "";
 $error = "";
