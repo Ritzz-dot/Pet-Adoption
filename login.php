@@ -1,8 +1,14 @@
 <?php
+require __DIR__ . '/includes/db.php';
 session_start();
-$error = isset($_SESSION['login_error']) ? $_SESSION['login_error'] : "";
+$error = $_SESSION['login_error'] ?? "";
 unset($_SESSION['login_error']);
 
+// Handle admin 2FA redirection
+if (isset($_SESSION['pending_2fa']) && is_numeric($_SESSION['pending_2fa'])) {
+  header("Location: verify_otp.php");
+  exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -33,7 +39,7 @@ unset($_SESSION['login_error']);
         <div id="passwordError" class="error-message"></div>
 
         <?php if (!empty($error)): ?>
-          <div class="error-message"><?php echo $error; ?></div>
+          <div class="error-message"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
 
         <label class="remember">

@@ -8,7 +8,7 @@ $conn->query("INSERT IGNORE INTO admin_settings (admin_id) VALUES ($admin_id)");
 
 function flash($msg) {
   $_SESSION['flash'] = $msg;
-  header("Location: admin_settings.php");
+  header("Location: admins_setting.php");
   exit;
 }
 
@@ -31,9 +31,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $current = $_POST['current_pwd'];
     $new     = $_POST['new_pwd'];
     $confirm = $_POST['confirm_pwd'];
+
     $user = $conn->query("SELECT password FROM users WHERE id=$admin_id")->fetch_assoc();
-    if (!$user || !password_verify($current, $user['password'])) flash("Current password incorrect!");
-    if ($new !== $confirm) flash("Password confirmation mismatch!");
+    if (!$user || !password_verify($current, $user['password'])) {
+      flash("Current password incorrect!");
+    }
+
+    if ($new !== $confirm) {
+      flash("Password confirmation mismatch!");
+    }
+
+    if (strlen($new) < 6) {
+      flash("New password must be at least 6 characters long.");
+    }
+
     $hashed = password_hash($new, PASSWORD_BCRYPT);
     $conn->query("UPDATE users SET password='$hashed' WHERE id=$admin_id");
     flash("Password changed successfully.");

@@ -3,18 +3,17 @@ $page_title = "Admin Dashboard";
 require 'includes/db.php';
 
 // Metrics from DB
-$total_users = $conn->query("SELECT COUNT(*) AS count FROM users")->fetch_assoc()['count'];
-$total_pets  = $conn->query("SELECT COUNT(*) AS count FROM pets")->fetch_assoc()['count'];
-$total_apps  = $conn->query("SELECT COUNT(*) AS count FROM adoption_requests")->fetch_assoc()['count'];
-$pending_apps = $conn->query("SELECT COUNT(*) AS count FROM adoption_requests WHERE status = 'Pending'")->fetch_assoc()['count'];
+$total_users    = $conn->query("SELECT COUNT(*) AS count FROM users")->fetch_assoc()['count'];
+$total_pets     = $conn->query("SELECT COUNT(*) AS count FROM pets")->fetch_assoc()['count'];
+$total_apps     = $conn->query("SELECT COUNT(*) AS count FROM adoption_requests")->fetch_assoc()['count'];
+$pending_apps   = $conn->query("SELECT COUNT(*) AS count FROM adoption_requests WHERE status = 'pending'")->fetch_assoc()['count'];
 ?>
 <?php ob_start(); ?>
 
 <h1 class="text-3xl font-bold mb-6">Dashboard Overview</h1>
 
 <!-- Stat Cards -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
   <div class="card">
     <div class="text-gray-500 text-sm">Total Users</div>
     <div class="text-4xl font-semibold"><?= $total_users ?></div>
@@ -34,10 +33,9 @@ $pending_apps = $conn->query("SELECT COUNT(*) AS count FROM adoption_requests WH
     <div class="text-gray-500 text-sm">Pending Applications</div>
     <div class="text-4xl font-semibold"><?= $pending_apps ?></div>
   </div>
-
 </div>
 
-<!-- Chart.js Traffic (Optional Dummy Data) -->
+<!-- Traffic Chart -->
 <div class="bg-white p-6 rounded-2xl shadow-md">
   <h2 class="text-xl font-semibold mb-4">Website Traffic (Last 7 Days)</h2>
   <canvas id="trafficChart" height="120"></canvas>

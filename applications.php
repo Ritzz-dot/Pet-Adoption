@@ -20,16 +20,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 /* ────────── Fetch Applications with Joins ────────── */
-$sql = "
-SELECT ar.*, 
-       u.fullname, u.email, u.phone,
-       p.name AS pet_name, p.image_path
-FROM adoption_requests ar
-JOIN users u ON ar.user_id = u.id
-JOIN pets p ON ar.pet_id = p.pet_id
-ORDER BY ar.request_date DESC
-";
-$result = $conn->query($sql);
+$sql = "SELECT 
+    r.req_id,
+    r.request_date,
+    r.status,
+    r.remark,
+    p.name AS pet_name,
+    p.image_path,
+    u.email,
+    d.full_name AS applicant_name,
+    d.age,
+    d.reason_to_adopt
+FROM adoption_requests r
+JOIN pets p ON r.pet_id = p.pet_id
+JOIN users u ON r.user_id = u.id
+JOIN adoption_application_details d ON r.req_id = d.request_id
+ORDER BY r.request_date DESC";
+
+
+
+
+$result = mysqli_query($conn, $sql);
+
 $applications = [];
 while ($row = $result->fetch_assoc()) $applications[] = $row;
 ?>
@@ -48,16 +60,21 @@ while ($row = $result->fetch_assoc()) $applications[] = $row;
     
     <!-- Pet Info -->
     <div class="flex items-center gap-4">
-      <img src="<?= htmlspecialchars($app['image_path']) ?>" class="w-20 h-20 object-cover rounded-full border" />
+      <img src="uploads/pets/<?php echo htmlspecialchars($row['image_path'] ?? ''); ?>" class="w-20 h-20 object-cover rounded-full border" />
       <div>
         <h2 class="text-lg font-semibold"><?= htmlspecialchars($app['pet_name']) ?></h2>
-        <p class="text-gray-500 text-sm">Requested by: <?= htmlspecialchars($app['fullname']) ?> (<?= $app['email'] ?>)</p>
+        <span class="font-semibold"><?php echo htmlspecialchars($row['applicant_name'] ?? ''); ?></span>
         <p class="text-sm text-gray-400"><?= date('d M Y, h:i A', strtotime($app['request_date'])) ?></p>
       </div>
     </div>
 
     <!-- Status + Action -->
     <div class="flex-1 md:text-right space-y-3 md:space-y-0 md:flex md:flex-col md:items-end">
+      <a href="applicant_details.php?req_id=<?= $app['req_id'] ?>"
+   class="inline-block mb-2 px-4 py-1 text-sm text-white bg-indigo-600 hover:bg-indigo-700 rounded-full transition">
+  View Details
+      </a>
+
       <span class="px-3 py-1 rounded-full text-sm font-medium
         <?= $app['status'] === 'pending' ? 'bg-yellow-100 text-yellow-800' : '' ?>
         <?= $app['status'] === 'approved' ? 'bg-green-100 text-green-800' : '' ?>
@@ -65,13 +82,13 @@ while ($row = $result->fetch_assoc()) $applications[] = $row;
         <?= ucfirst($app['status']) ?>
       </span>
 
-      <?php if ($app['status'] === 'pending'): ?>
+     <!-- <?php if ($app['status'] === 'pending'): ?>
         <form method="POST" class="mt-2 flex flex-col sm:flex-row items-end gap-3">
           <input type="hidden" name="req_id" value="<?= $app['req_id'] ?>">
           <input type="text" name="remark" placeholder="Optional remark" class="input-field w-48" />
           <button name="action" value="approve" class="btn btn-primary">Approve</button>
           <button name="action" value="reject" class="btn btn-danger">Reject</button>
-        </form>
+        </form> -->
       <?php elseif (!empty($app['remark'])): ?>
         <p class="text-sm text-gray-600 italic mt-2">Remark: <?= htmlspecialchars($app['remark']) ?></p>
       <?php endif; ?>
@@ -90,7 +107,7 @@ while ($row = $result->fetch_assoc()) $applications[] = $row;
   }
   .btn-primary {
     @apply bg-blue-600 text-white hover:bg-blue-700;
-  }
+  } 
   .btn-danger {
     @apply bg-red-500 text-white hover:bg-red-600;
   }
