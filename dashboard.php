@@ -2,6 +2,21 @@
 session_start();
 include __DIR__ . '/includes/db.php';
 
+
+
+$query = "SELECT notice_text FROM site_notices ORDER BY created_at DESC LIMIT 1";
+$result = mysqli_query($conn, $query);
+
+$notice = "";
+$query = "SELECT notice_text FROM site_notices ORDER BY created_at DESC LIMIT 1";
+$result = mysqli_query($conn, $query);
+if ($result && mysqli_num_rows($result) > 0) {
+    $row = mysqli_fetch_assoc($result);
+    $notice = $row['notice_text'];
+}
+
+
+
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'user') {
     header("Location: login.php");
     exit();
@@ -27,6 +42,7 @@ $petsRes = $conn->query("SELECT pet_id, name, breed, age, image_path FROM pets W
 </head>
 <body class="font-sans bg-neutral-50 overflow-x-hidden">
 
+
   <!-- NAVBAR -->
   <header class="bg-white shadow-sm sticky top-0 z-50">
     <nav class="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
@@ -34,7 +50,7 @@ $petsRes = $conn->query("SELECT pet_id, name, breed, age, image_path FROM pets W
       <ul class="hidden md:flex gap-8 font-medium">
         <li><a href="dashboard.php" class="text-gray-700 hover:text-blue-600">Home</a></li>
         <li><a href="browse_pets.php" class="text-gray-700 hover:text-blue-600">Browse</a></li>
-        <li><a href="my_applications.php" class="text-gray-700 hover:text-blue-600">Applications</a></li>
+        <li><a href="user_application.php" class="text-gray-700 hover:text-blue-600">Applications</a></li>
         <li><a href="user_profile.php" class="text-gray-700 hover:text-blue-600">Profile</a></li>
         <li><a href="logout.php" class="text-red-600 hover:text-red-700">Logout</a></li>
       </ul>
@@ -53,6 +69,24 @@ $petsRes = $conn->query("SELECT pet_id, name, breed, age, image_path FROM pets W
     </div>
   </header>
 
+  <!-- NOTICE -->
+
+<?php if (!empty($notice)) : ?>
+  <div id="siteNotice" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-yellow-100 text-black border border-yellow-400 px-6 py-3 rounded shadow-lg z-50 transition-opacity duration-500">
+    <?= htmlspecialchars($notice) ?>
+  </div>
+
+  <script>
+    setTimeout(() => {
+      const notice = document.getElementById("siteNotice");
+      if (notice) {
+        notice.style.opacity = "0";
+        setTimeout(() => notice.remove(), 1000);
+      }
+    }, 10000);
+  </script>
+<?php endif; ?>
+
   <!-- HERO -->
   <section class="relative h-[60vh] bg-cover bg-center" style="background-image:url('assets/hero.jpg')">
     <div class="absolute inset-0 bg-black/40"></div>
@@ -63,34 +97,28 @@ $petsRes = $conn->query("SELECT pet_id, name, breed, age, image_path FROM pets W
       <p class="text-lg text-gray-200 mb-6">
         Explore loving pets waiting for a forever home.
       </p>
-      <form action="browse_pets.php" method="GET" class="flex w-full max-w-xl gap-3 px-4">
-        <input type="text" name="q" placeholder="Search by name or breed" class="flex-1 py-3 px-4 rounded-md">
-        <button type="submit" class="bg-blue-600 text-white px-5 py-3 rounded-md">
-          Search
-        </button>
-      </form>
+<div class="flex w-full max-w-xl gap-3 px-4">
+  <input type="text" id="liveSearchInput" placeholder="Search by name or breed"
+         class="flex-1 py-3 px-4 rounded-md" />
+</div>
+
     </div>
   </section>
 
   <!-- PET CARD GRID -->
-  <section class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 py-12 px-6">
-    <?php while ($pet = $petsRes->fetch_assoc()): ?>
-      <a href="pet_details.php?pet_id=<?= $pet['pet_id'] ?>" class="bg-white rounded-lg shadow hover:shadow-lg overflow-hidden transition">
+<!-- PET CARD GRID (dynamic) -->
+<section id="petResults" class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 py-12 px-6">
+  <?php while ($pet = $petsRes->fetch_assoc()): ?>
+    <a href="pet_details.php?pet_id=<?= $pet['pet_id'] ?>" class="bg-white rounded-lg shadow hover:shadow-lg overflow-hidden transition">
+    <img src="<?= htmlspecialchars($pet['image_path']) ?>" alt="<?= htmlspecialchars($pet['name']) ?>" style="width: 100%; max-height: 250px; object-fit: cover;" />
+      <div class="p-4">
+        <h3 class="text-lg font-semibold"><?= htmlspecialchars($pet['name']) ?></h3>
+        <p class="text-sm text-gray-600"><?= htmlspecialchars($pet['breed']) ?> • <?= intval($pet['age']) ?> yrs</p>
+      </div>
+    </a>
+  <?php endwhile; ?>
+</section>
 
-        <?php
-          $image = !empty($pet['image_path']) && file_exists(__DIR__ . "/uploads/pets/" . $pet['image_path'])
-            ? "uploads/pets/" . $pet['image_path']
-            : "assets/no-image.png"; // fallback image
-        ?>
-        <img src="uploads/pets/<?= htmlspecialchars($pet['image_path']) ?>" alt="<?= htmlspecialchars($pet['name']) ?>" style="width: 100%; max-height: 250px; object-fit: cover;" />
-
-        <div class="p-4">
-          <h3 class="text-lg font-semibold"><?= htmlspecialchars($pet['name']) ?></h3>
-          <p class="text-sm text-gray-600"><?= htmlspecialchars($pet['breed']) ?> • <?= intval($pet['age']) ?> yrs</p>
-        </div>
-      </a>
-    <?php endwhile; ?>
-  </section>
 
   <!-- WHY ADOPT -->
   <section class="bg-white py-16 px-6">
@@ -112,6 +140,11 @@ $petsRes = $conn->query("SELECT pet_id, name, breed, age, image_path FROM pets W
       </div>
     </div>
   </section>
+
+ 
+
+
+
 
   <!-- HOW IT WORKS -->
   <section class="bg-blue-50 py-16 px-6">
@@ -144,5 +177,21 @@ $petsRes = $conn->query("SELECT pet_id, name, breed, age, image_path FROM pets W
     const menu = document.getElementById('mobileMenu');
     btn.addEventListener('click', () => menu.classList.toggle('hidden'));
   </script>
+
+  <script>
+document.getElementById('liveSearchInput').addEventListener('input', function () {
+  const query = this.value.trim();
+
+  fetch('search_pets.php?search=' + encodeURIComponent(query))
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById('petResults').innerHTML = html;
+    })
+    .catch(err => {
+      console.error("Search error:", err);
+    });
+});
+</script>
+
 </body>
 </html>

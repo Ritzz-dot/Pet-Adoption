@@ -14,7 +14,7 @@ function flash($msg) {
 
 // Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  if ($_POST['action'] === 'upload_avatar' && !empty($_FILES['avatar']['name'])) {
+  if (isset($_POST['action']) && $_POST['action'] === 'upload_avatar' && !empty($_FILES['avatar']['name'])) {
     $dir = 'uploads/avatars/';
     if (!is_dir($dir)) mkdir($dir, 0755, true);
     $ext = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     flash("Profile picture updated!");
   }
 
-  if ($_POST['action'] === 'change_password') {
+  if (isset($_POST['action']) && $_POST['action'] === 'change_password') {
     $current = $_POST['current_pwd'];
     $new     = $_POST['new_pwd'];
     $confirm = $_POST['confirm_pwd'];
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     flash("Password changed successfully.");
   }
 
-  if ($_POST['action'] === 'update_contact') {
+  if (isset($_POST['action']) && $_POST['action'] === 'update_contact') {
     $email = $_POST['email']; $phone = $_POST['phone'];
     $stmt = $conn->prepare("UPDATE users SET email=?, phone=? WHERE id=?");
     $stmt->bind_param('ssi', $email, $phone, $admin_id);
@@ -90,15 +90,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   }
 
-  if (isset($_POST['broadcast_notice'])) {
-    $msg = trim($_POST['notice']);
-    if ($msg) {
-      $stmt = $conn->prepare("INSERT INTO site_notices (message) VALUES (?)");
-      $stmt->bind_param('s', $msg);
-      $stmt->execute(); $stmt->close();
-      flash("Notice broadcasted.");
-    }
-  }
+  if (isset($_POST['broadcast_notice']) && isset($_POST['notice_text'])) {
+    $notice = mysqli_real_escape_string($conn, $_POST['notice_text']);
+    mysqli_query($conn, "UPDATE site_notices SET is_active = 0");
+    mysqli_query($conn, "INSERT INTO site_notices (notice_text, is_active, created_at) VALUES ('$notice', 1, NOW())");
+    flash("Notice broadcasted successfully!");
+}
+
+
 
   if (isset($_POST['reset_settings'])) {
     $conn->query("UPDATE admin_settings SET dark_mode=0, two_factor=0, auto_logout=15, profile_picture=NULL WHERE admin_id=$admin_id");
@@ -178,9 +177,14 @@ $flash = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
 </form>
 
 <!-- Broadcast Notice -->
+ <?php if (isset($success)) : ?>
+    <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
+        <?= $success ?>
+    </div>
+<?php endif; ?>
 <form method="POST" class="bg-white p-6 rounded-2xl shadow-md mb-6 space-y-4">
   <h2 class="text-xl font-semibold">Broadcast Site-Wide Notice</h2>
-  <textarea name="notice" class="input-field w-full" rows="3" placeholder="Enter notice..."></textarea>
+  <textarea name="notice_text" class="input-field w-full" rows="3" placeholder="Enter notice..."></textarea>
   <button name="broadcast_notice" class="btn btn-primary">Send Notice</button>
 </form>
 

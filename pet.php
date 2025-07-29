@@ -30,8 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_pet'])) {
             if (!move_uploaded_file($_FILES['image']['tmp_name'], $path)) {
                 $err = "Failed to move uploaded file.";
             } else {
-                $stmt = $conn->prepare("INSERT INTO pets (name, breed, age, image_path) VALUES (?,?,?,?)");
-                $stmt->bind_param('ssis', $name, $breed, $age, $path);
+                $description = trim($_POST['description'] ?? '');
+                $stmt = $conn->prepare("INSERT INTO pets (name, breed, age, image_path, description) VALUES (?, ?, ?, ?, ?)");
+                $stmt->bind_param('ssiss', $name, $breed, $age, $path, $description);
+
                 $stmt->execute();
                 $stmt->close();
                 $success = "Pet added successfully!";
@@ -69,6 +71,7 @@ $pets = $conn->query("SELECT * FROM pets ORDER BY pet_id DESC")->fetch_all(MYSQL
     <input name="breed" type="text"   placeholder="Breed"     class="input-field" required>
     <input name="age"   type="number" placeholder="Age (yrs)" class="input-field" min="1" required>
     <input name="image" type="file"   accept="image/*"        class="input-field col-span-1 md:col-span-2" required>
+    <textarea name="description" placeholder="Description" class="input-field col-span-1 md:col-span-2" rows="4" required></textarea>
   </div>
   <button name="add_pet" class="btn btn-primary">Add Pet</button>
 </form>
@@ -83,7 +86,7 @@ $pets = $conn->query("SELECT * FROM pets ORDER BY pet_id DESC")->fetch_all(MYSQL
 
     <div class="mt-3 flex justify-center gap-3">
       <!-- Edit page to be implemented -->
-      <a href="edit_pet.php?pet_id=<?= $pet['pet_id'] ?>" class="btn btn-secondary">Edit</a>
+      <a href="edit_pets.php?pet_id=<?= $pet['pet_id'] ?>" class="btn btn-primary">Edit</a>
       <form method="POST" onsubmit="return confirm('Delete this pet?');">
         <input type="hidden" name="pet_id" value="<?= $pet['pet_id'] ?>">
         <button name="delete_pet" class="btn btn-danger">Delete</button>

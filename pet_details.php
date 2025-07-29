@@ -55,7 +55,8 @@ $image = !empty($pet['image_path']) && file_exists("uploads/pets/" . $pet['image
 <!-- MAIN CONTENT -->
 <main class="max-w-4xl mx-auto mt-10 bg-white rounded-xl shadow-md p-6">
   <div class="flex flex-col md:flex-row gap-8">
-    <img src="<?= $image ?>" alt="<?= htmlspecialchars($pet['name']) ?>" class="w-full md:w-1/2 rounded-xl object-cover max-h-[400px]">
+     
+    <img src="<?= htmlspecialchars($pet['image_path']) ?>" alt="<?= htmlspecialchars($pet['name']) ?>" class="w-full md:w-1/2 rounded-xl object-cover max-h-[400px]">
     
     <div class="flex-1">
       <h1 class="text-3xl font-bold mb-2"><?= htmlspecialchars($pet['name'] ?? '')  ?></h1>
